@@ -15,5 +15,6 @@ public class FollowController : MonoBehaviour
     void Update()
     {
         transform.position = _followObject.transform.position;
+        transform.rotation = _followObject.transform.rotation;
     }
 }

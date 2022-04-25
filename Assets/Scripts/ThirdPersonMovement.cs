@@ -17,6 +17,34 @@ public class ThirdPersonMovement : MonoBehaviour
     [SerializeField] LayerMask _groundMask;
     [SerializeField] bool _isGrounded;
     Vector3 _velocity;
+    private Vector3 direction;
+
+    //For Walking on Walls
+    [SerializeField] GameObject _graphics;
+    private Vector3 _currentPosition;
+    private float horizontal;
+    private float vertical;
+    Vector3 _counterForce;
+    RaycastHit hit;
+
+
+    /*private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag == "Cimable")
+        {
+            Debug.Log("Collided");
+            GetOnWall();
+        }
+    }
+
+    private void OnCollisionExit(Collision collision)
+    {
+        if (collision.gameObject.tag == "Cimable")
+        {
+            Debug.Log("Collided");
+            OffWall();
+        }
+    }*/
 
     private void Start()
     {
@@ -24,17 +52,32 @@ public class ThirdPersonMovement : MonoBehaviour
     }
     void Update()
     {
+        _currentPosition = _graphics.transform.position;
         _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundDistance, _groundMask);
         if (_isGrounded && _velocity.y < 0)
         {
             _velocity.y = -2f;
         }
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
+        horizontal = Input.GetAxisRaw("Horizontal");
+        vertical = Input.GetAxisRaw("Vertical");
 
-        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized;
+        
 
-        if(direction.magnitude >= 0.1f)
+        //Change Orientation When touching wall;
+        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward),out hit, 2f))
+        {
+            if (hit.transform.tag == "Cimable")
+            {
+                transform.Rotate(-90, 0, 0);
+                direction = new Vector3(horizontal, vertical, 0f).normalized;
+            }
+        }
+        else
+        direction = new Vector3(horizontal, 0f, vertical).normalized;
+
+
+
+        if (direction.magnitude >= 0.1f)
         {
             float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, _turnSmoothTime);
@@ -45,13 +88,30 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Space) && _isGrounded)
         {
+            OffWall();
             _velocity.y = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
             Debug.Log("Jump");
         }
 
         _velocity.y += _gravity * Time.deltaTime;
+        _counterForce.y = -_velocity.y;
 
         _controller.Move(_velocity * Time.deltaTime);
 
+    }
+
+    private void GetOnWall()
+    {
+        _graphics.transform.Rotate(-90, 0, 0);
+        
+        if (Physics.Raycast(_graphics.transform.position, _graphics.transform.TransformDirection(Vector3.down), 2f))
+        {
+            _graphics.transform.Rotate(90, 0, 0);
+        }
+    }
+
+    private void OffWall()
+    {
+        _graphics.transform.SetPositionAndRotation(_currentPosition, Quaternion.Euler(0f,0f,0f));
     }
 }

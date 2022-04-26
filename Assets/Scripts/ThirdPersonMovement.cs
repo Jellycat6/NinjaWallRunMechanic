@@ -20,12 +20,14 @@ public class ThirdPersonMovement : MonoBehaviour
     private Vector3 direction;
 
     //For Walking on Walls
-    [SerializeField] GameObject _graphics;
-    private Vector3 _currentPosition;
     private float horizontal;
     private float vertical;
-    Vector3 _counterForce;
     RaycastHit hit;
+    RaycastHit hit2;
+    [SerializeField] GameObject raycastSpawner;
+    [SerializeField] GameObject raycastSpawner2;
+    Vector3 _currentPosition;
+    bool notTouchingWall;
 
 
     /*private void OnCollisionEnter(Collision collision)
@@ -49,10 +51,11 @@ public class ThirdPersonMovement : MonoBehaviour
     private void Start()
     {
             Cursor.lockState = CursorLockMode.Locked;
+        notTouchingWall = false;
     }
     void Update()
     {
-        _currentPosition = _graphics.transform.position;
+        _currentPosition = transform.position;
         _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundDistance, _groundMask);
         if (_isGrounded && _velocity.y < 0)
         {
@@ -60,58 +63,77 @@ public class ThirdPersonMovement : MonoBehaviour
         }
         horizontal = Input.GetAxisRaw("Horizontal");
         vertical = Input.GetAxisRaw("Vertical");
-
-        
-
-        //Change Orientation When touching wall;
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward),out hit, 2f))
+        if (vertical > 0f)
         {
-            if (hit.transform.tag == "Cimable")
+            transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+            _controller.Move(transform.forward * 6f * Time.deltaTime);
+            
+        }
+        else if (vertical < 0f)
+        {
+            transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            _controller.Move(transform.forward * 6f * Time.deltaTime);
+            
+        }
+        if (horizontal > 0f)
+        {
+            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            _controller.Move(transform.forward * 6f * Time.deltaTime);
+            
+        }
+        else if (horizontal < 0f)
+        {
+            transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            _controller.Move(transform.forward * 6f * Time.deltaTime);
+            
+        }
+        // direction = new Vector3(horizontal, 0f, vertical).normalized;
+
+        Debug.DrawRay(raycastSpawner.transform.position, raycastSpawner.transform.forward, Color.cyan);
+        Debug.DrawRay(raycastSpawner.transform.position, -raycastSpawner2.transform.up, Color.cyan);
+        //Change Orientation When touching wall;
+        if (Physics.Raycast(raycastSpawner.transform.position, raycastSpawner.transform.forward,out hit, 1f))
+        {
+            notTouchingWall = true;
+            
+            Debug.Log("Touched");
+            if (hit.transform.tag == "Cimable" && Physics.Raycast(raycastSpawner.transform.position, -raycastSpawner2.transform.up, out hit2, 10f))
             {
-                transform.Rotate(-90, 0, 0);
-                direction = new Vector3(horizontal, vertical, 0f).normalized;
+                Debug.Log("Attatched");
+                if (notTouchingWall)
+                {
+                    transform.rotation = Quaternion.Euler(-90f,0f,0f);
+                }
+                notTouchingWall = false;
+
+            }
+            else
+            {
+                //Debug.Log("Off");
+                //transform.SetPositionAndRotation(_currentPosition, Quaternion.Euler(0f, 0f, 0f));
             }
         }
-        else
-        direction = new Vector3(horizontal, 0f, vertical).normalized;
+        
 
-
-
-        if (direction.magnitude >= 0.1f)
+        /*if (horizontal >= 0.1f)
         {
-            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+            float targetAngle = Mathf.Atan2(transform.position.x, transform.position.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref _turnSmoothVelocity, _turnSmoothTime);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
             Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
             _controller.Move(moveDir.normalized * _speed * Time.deltaTime);
-        }
+        }*/
         if (Input.GetKeyDown(KeyCode.Space) && _isGrounded)
         {
-            OffWall();
+            transform.SetPositionAndRotation(_currentPosition, Quaternion.Euler(0f, 0f, 0f));
             _velocity.y = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
             Debug.Log("Jump");
         }
 
         _velocity.y += _gravity * Time.deltaTime;
-        _counterForce.y = -_velocity.y;
 
         _controller.Move(_velocity * Time.deltaTime);
 
-    }
-
-    private void GetOnWall()
-    {
-        _graphics.transform.Rotate(-90, 0, 0);
-        
-        if (Physics.Raycast(_graphics.transform.position, _graphics.transform.TransformDirection(Vector3.down), 2f))
-        {
-            _graphics.transform.Rotate(90, 0, 0);
-        }
-    }
-
-    private void OffWall()
-    {
-        _graphics.transform.SetPositionAndRotation(_currentPosition, Quaternion.Euler(0f,0f,0f));
     }
 }
